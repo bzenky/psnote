@@ -11,6 +11,8 @@ export const tools: { tool: Tool; label: string; key: string }[] = [
 ];
 export function Toolbar({
   activeTool,
+  panActive,
+  onPan,
   onTool,
   disabled,
   canUndo,
@@ -19,6 +21,8 @@ export function Toolbar({
   onRedo,
 }: {
   activeTool: Tool;
+  panActive: boolean;
+  onPan: () => void;
   onTool: (tool: Tool) => void;
   disabled: boolean;
   canUndo: boolean;
@@ -29,13 +33,26 @@ export function Toolbar({
   return (
     <div className="toolbar" role="toolbar" aria-label="Annotation tools">
       <div className="tool-group">
+        <button
+          type="button"
+          className={`tool-button ${panActive ? "active" : ""}`}
+          aria-label="Pan"
+          aria-pressed={panActive}
+          title="Pan (H), hold Space, or drag with the middle mouse button"
+          disabled={disabled}
+          onClick={onPan}
+        >
+          <Icon name="pan" />
+          <span>Pan</span>
+          <kbd>H</kbd>
+        </button>
         {tools.map(({ tool, label, key }) => (
           <button
             key={tool}
             type="button"
-            className={`tool-button ${tool === activeTool ? "active" : ""}`}
+            className={`tool-button ${tool === activeTool && !panActive ? "active" : ""}`}
             aria-label={label}
-            aria-pressed={tool === activeTool}
+            aria-pressed={tool === activeTool && !panActive}
             title={`${label} (${key})`}
             disabled={disabled}
             onClick={() => onTool(tool)}

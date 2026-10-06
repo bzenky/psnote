@@ -3,6 +3,7 @@ import { Canvas } from "../editor/Canvas";
 import { Toolbar, tools } from "../editor/Toolbar";
 import { PropertiesPanel } from "../editor/PropertiesPanel";
 import { Icon } from "../editor/Icon";
+import { usePan } from "../editor/use-pan";
 import {
   loadImage,
   supportedTypes,
@@ -46,6 +47,7 @@ export default function App() {
   historyRef.current = history;
   const document = history.present;
   const annotation = document.annotations.find((a) => a.id === selected);
+  const pan = usePan(!!source && !loading && !pending, () => setFitting(false));
 
   useEffect(() => () => releaseSource(source), [source]);
   useEffect(() => {
@@ -58,6 +60,11 @@ export default function App() {
   const fit = useCallback(() => {
     const box = workspace.current?.getBoundingClientRect();
     if (!box || !document.crop.width) return;
+    pan.reset();
+    if (workspace.current) {
+      workspace.current.scrollLeft = 0;
+      workspace.current.scrollTop = 0;
+    }
     setZoom(
       Math.max(
         0.01,
@@ -73,7 +80,7 @@ export default function App() {
       ),
     );
     setFitting(true);
-  }, [document.crop.width, document.crop.height]);
+  }, [document.crop.width, document.crop.height, pan.reset]);
   useEffect(() => {
     if (!fitting || !workspace.current || !source) return;
     fit();
@@ -84,6 +91,8 @@ export default function App() {
 
   const acceptSource = (candidate: ImageSource) => {
     setSource(candidate);
+    pan.reset();
+    pan.setHandTool(false);
     dispatch({
       type: "reset",
       document: initialDocument(candidate.width, candidate.height),
@@ -141,6 +150,7 @@ export default function App() {
   });
 
   const selectTool = (tool: Tool) => {
+    pan.setHandTool(false);
     dispatch({ type: "commit" });
     setTool(tool);
     setCrop(null);
@@ -310,6 +320,11 @@ export default function App() {
         <div className="editor-frame">
           <Toolbar
             activeTool={tool}
+            panActive={pan.handTool}
+            onPan={() => {
+              dispatch({ type: "commit" });
+              pan.setHandTool((current) => !current);
+            }}
             onTool={selectTool}
             disabled={disabled}
             canUndo={
@@ -319,66 +334,84 @@ export default function App() {
             onUndo={undo}
             onRedo={redo}
           />
-          {annotation && !disabled && (
-            <PropertiesPanel
-              annotation={annotation}
-              preview={(a) => update(a, true)}
-              commit={() => dispatch({ type: "commit" })}
-              remove={deleteSelected}
-              focusText={focusText}
-            />
-          )}
-          {tool === "crop" && source && (
-            <div className="crop-controls">
-              <span>Drag a region to crop. You can undo this.</span>
-              <button
-                disabled={!crop || crop.width < 1 || crop.height < 1}
-                onClick={() => {
-                  if (!crop) return;
-                  dispatch({
-                    type: "edit",
-                    document: cropDocument(document, crop),
-                  });
-                  setCrop(null);
-                  setSelected(null);
-                  setTool("select");
-                  setFitting(true);
-                }}
-              >
-                <Icon name="check" />
-                Apply crop
-              </button>
-              <button
-                onClick={() => {
-                  setCrop(null);
-                  setTool("select");
-                }}
-              >
-                Cancel crop
-              </button>
-            </div>
-          )}
+          <div className="context-bar">
+            {tool === "crop" && source ? (
+              <div className="crop-controls">
+                <span>Drag a region to crop. You can undo this.</span>
+                <button
+                  disabled={!crop || crop.width < 1 || crop.height < 1}
+                  onClick={() => {
+                    if (!crop) return;
+                    dispatch({
+                      type: "edit",
+                      document: cropDocument(document, crop),
+                    });
+                    setCrop(null);
+                    setSelected(null);
+                    setTool("select");
+                    setFitting(true);
+                  }}
+                >
+                  <Icon name="check" />
+                  Apply crop
+                </button>
+                <button
+                  onClick={() => {
+                    setCrop(null);
+                    setTool("select");
+                  }}
+                >
+                  Cancel crop
+                </button>
+              </div>
+            ) : annotation && !disabled ? (
+              <PropertiesPanel
+                annotation={annotation}
+                preview={(a) => update(a, true)}
+                commit={() => dispatch({ type: "commit" })}
+                remove={deleteSelected}
+                focusText={focusText}
+              />
+            ) : (
+              <div className="context-hint">
+                {source
+                  ? "Select an annotation to edit it. Hold Space and drag to pan."
+                  : "Open an image to start annotating."}
+              </div>
+            )}
+          </div>
           <div
             ref={workspace}
-            className={`workspace ${source ? "has-image" : ""}`}
+            className={`workspace ${source ? "has-image" : ""} ${pan.active ? "pan-ready" : ""} ${pan.dragging ? "is-panning" : ""}`}
+            aria-busy={loading}
+            {...pan.handlers}
           >
             {source ? (
-              <Canvas
-                source={source}
-                document={document}
-                tool={tool}
-                zoom={zoom}
-                selected={selected}
-                select={(id) => {
-                  setSelected(id);
-                  setFocusText(false);
+              <div
+                className="canvas-placement"
+                style={{
+                  width: document.crop.width * zoom,
+                  height: document.crop.height * zoom,
+                  transform: `translate(${pan.offset.x}px, ${pan.offset.y}px)`,
                 }}
-                add={add}
-                change={(a) => update(a)}
-                crop={crop}
-                onCrop={setCrop}
-                disabled={disabled}
-              />
+              >
+                <Canvas
+                  source={source}
+                  document={document}
+                  tool={tool}
+                  zoom={zoom}
+                  selected={selected}
+                  select={(id) => {
+                    setSelected(id);
+                    setFocusText(false);
+                  }}
+                  add={add}
+                  change={(a) => update(a)}
+                  crop={crop}
+                  onCrop={setCrop}
+                  disabled={disabled || pan.active}
+                />
+              </div>
             ) : (
               <div className="empty-state">
                 <div className="empty-illustration">
@@ -466,7 +499,7 @@ export default function App() {
                   : "No image loaded"}
               </span>
             </div>
-            <div className="output-controls">
+            <div className="output-controls" aria-busy={outputting}>
               <button
                 className="export-button"
                 disabled={disabled || outputting}
@@ -500,7 +533,9 @@ export default function App() {
             {document.annotations.length === 1 ? "annotation" : "annotations"}
           </span>
           {source && (
-            <span className="active-tool-label">{toolLabel} tool</span>
+            <span className="active-tool-label">
+              {pan.handTool ? "Pan" : toolLabel} tool
+            </span>
           )}
         </div>
       </main>

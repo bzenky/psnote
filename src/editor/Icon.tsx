@@ -10,6 +10,7 @@ export function Icon({
 }) {
   const paths: Record<string, string> = {
     select: "M5 3l14 9-7 1-3 7-4-17z",
+    pan: "M8 13V6a2 2 0 014 0v6-8a2 2 0 014 0v8-6a2 2 0 014 0v9c0 4-2 7-6 7h-2c-2 0-3-1-4-3l-4-6a2 2 0 013-2l3 3",
     arrow: "M5 19L19 5M9 5h10v10",
     rectangle: "M4 5h16v14H4z",
     text: "M4 5h16M12 5v15M8 20h8",

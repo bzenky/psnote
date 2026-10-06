@@ -24,12 +24,18 @@ PNG, JPEG, and WebP, up to 20 MiB and 20 million decoded pixels.
 | Key                | Tool/action                                 |
 | ------------------ | ------------------------------------------- |
 | V                  | Select; drag to move, use handles to resize |
+| H                  | Toggle Pan to reposition the image view     |
+| Space + drag       | Temporarily pan without switching tools     |
 | A / R / T          | Arrow / Rectangle / Text                    |
 | B / N / C          | Solid redaction / Number marker / Crop      |
 | Delete             | Delete selected annotation                  |
 | Ctrl/⌘ + Z         | Undo                                        |
 | Ctrl/⌘ + Shift + Z | Redo                                        |
 | + / − / 0          | Zoom in / Zoom out / Fit to screen          |
+
+Drag with **Pan**, hold **Space**, or use the middle mouse button to reposition
+the image view. **Fit to screen** resets the position. Panning does not change
+annotations, undo history, or the copied/exported image.
 
 Edit selected annotations with the contextual properties. Text changes commit
 when the field loses focus. Use **Apply crop** or **Cancel crop** after selecting
