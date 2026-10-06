@@ -50,10 +50,133 @@
       name="twitter:image:alt"
       content="psnote — Screenshot annotation, without the upload. Paste, annotate, copy."
     />
+    <link rel="stylesheet" href="/src/app/styles.css" />
+    <link rel="stylesheet" href="/src/app/homepage.css" />
+    <noscript>
+      <style>
+        #root {
+          display: none !important;
+        }
+      </style>
+    </noscript>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   </head>
   <body>
     <div id="root"></div>
+    <noscript>
+      <p class="javascript-notice">
+        The screenshot editor needs JavaScript. You can still read how psnote
+        works below.
+      </p>
+    </noscript>
+    <section class="homepage-info" aria-labelledby="homepage-title">
+      <div class="homepage-intro">
+        <span class="eyebrow">PRINT SCREEN NOTES</span>
+        <h1 id="homepage-title">
+          Annotate screenshots online, without uploading them.
+        </h1>
+        <p>
+          psnote is a screenshot annotation tool that runs in your browser. Add
+          arrows, text, boxes, and numbered markers to explain a bug, review a
+          design, or make an instruction easier to follow. No account or image
+          upload is required.
+        </p>
+        <a class="homepage-link" href="#root"
+          >Back to the screenshot editor ↑</a
+        >
+      </div>
+      <section aria-labelledby="how-it-works">
+        <h2 id="how-it-works">From screenshot to explanation in three steps</h2>
+        <ol class="homepage-steps">
+          <li>
+            <h3>Paste or open an image</h3>
+            <p>
+              Paste a screenshot with Ctrl/⌘ + V, drag an image into the
+              workspace, or choose Open image. PNG, JPEG, and WebP are
+              supported.
+            </p>
+          </li>
+          <li>
+            <h3>Mark what matters</h3>
+            <p>
+              Point out details with arrows and rectangles, add text or numbered
+              markers, cover sensitive areas with solid redaction, and crop away
+              distractions. Undo and redo let you adjust your edits.
+            </p>
+          </li>
+          <li>
+            <h3>Copy or export PNG</h3>
+            <p>
+              Copy the annotated image into another application or export a PNG
+              for a bug report, support message, or document. Export keeps the
+              cropped image resolution, regardless of the editor zoom.
+            </p>
+          </li>
+        </ol>
+      </section>
+      <section class="homepage-privacy" aria-labelledby="privacy-title">
+        <h2 id="privacy-title">Your screenshots are processed locally</h2>
+        <p>
+          Images and annotations stay in your browser. psnote does not upload
+          screenshots or save editing sessions. Copy or export your work before
+          reloading or leaving the page.
+        </p>
+        <p>
+          The live site uses Google Analytics for site usage measurement. psnote
+          does not send screenshot data, filenames, or annotation content in
+          custom analytics events. Site analytics are separate from local image
+          processing.
+        </p>
+      </section>
+      <section class="homepage-faq" aria-labelledby="faq-title">
+        <h2 id="faq-title">Screenshot annotation FAQ</h2>
+        <details>
+          <summary>Which image formats and sizes can I open?</summary>
+          <p>
+            Open PNG, JPEG, or WebP images up to 20 MiB and 20 million decoded
+            pixels. Annotated images are copied or exported as PNG.
+          </p>
+        </details>
+        <details>
+          <summary>Why does copying an image sometimes fail?</summary>
+          <p>
+            Clipboard image writing needs HTTPS or localhost, and support and
+            permissions vary by browser. If Copy image is unavailable or denied,
+            use Export PNG instead. To paste, copy an actual image to your
+            clipboard rather than a file path or image URL.
+          </p>
+        </details>
+        <details>
+          <summary>
+            Does redaction remove the covered pixels from exports?
+          </summary>
+          <p>
+            Solid redaction replaces the covered source pixels in the flattened
+            PNG you copy or export. The redaction remains editable in the
+            current session. Cover the entire sensitive area and inspect the
+            exported image before sharing; information outside the covered area
+            is not removed.
+          </p>
+        </details>
+        <details>
+          <summary>Does zoom change the exported image size?</summary>
+          <p>
+            No. Zoom only changes your view of the workspace. Copy and PNG
+            export use the cropped pixel dimensions of the document and do not
+            include the editor controls.
+          </p>
+        </details>
+        <details>
+          <summary>
+            Are my annotations saved if I close or reload the page?
+          </summary>
+          <p>
+            No. Editing sessions exist only in memory. Copy or export anything
+            you want to keep before closing or reloading the page.
+          </p>
+        </details>
+      </section>
+    </section>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

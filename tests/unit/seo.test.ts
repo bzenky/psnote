@@ -24,6 +24,36 @@ describe("public SEO assets", () => {
     expect(meta("robots")).toBeUndefined();
   });
 
+  it("delivers useful homepage content outside React's mount point", () => {
+    expect(page.querySelector("#root")?.childElementCount).toBe(0);
+    expect(page.querySelectorAll("h1")).toHaveLength(1);
+    const content = page.querySelector(".homepage-info")!;
+    expect(content.querySelector("h1")?.textContent).toContain(
+      "Annotate screenshots online, without uploading them.",
+    );
+    expect(content.querySelectorAll(".homepage-steps li")).toHaveLength(3);
+    expect(content.querySelectorAll("details summary")).toHaveLength(5);
+    expect(content.textContent).toContain("Google Analytics");
+    expect(content.textContent).toContain("flattened");
+    expect(page.querySelector("body noscript")?.textContent).toContain(
+      "editor needs JavaScript",
+    );
+    for (const link of content.querySelectorAll<HTMLAnchorElement>("a")) {
+      expect(page.querySelector(link.getAttribute("href")!)).not.toBeNull();
+    }
+  });
+
+  it("loads styles directly from the HTML before application JavaScript", () => {
+    expect(
+      Array.from(page.querySelectorAll('head link[rel="stylesheet"]'), (link) =>
+        link.getAttribute("href"),
+      ),
+    ).toEqual(["/src/app/styles.css", "/src/app/homepage.css"]);
+    expect(page.querySelector("head noscript style")?.textContent).toContain(
+      "display: none",
+    );
+  });
+
   it("provides consistent social metadata with an absolute PNG preview URL", () => {
     expect(meta("og:type")).toBe("website");
     expect(meta("og:site_name")).toBe("psnote");

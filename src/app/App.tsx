@@ -256,7 +256,7 @@ export default function App() {
         </span>
         <div className="header-actions">
           <span className="local-badge">
-            <span /> All local. Always.
+            <span /> Images stay local.
           </span>
           <button
             className="open-button"
@@ -301,7 +301,7 @@ export default function App() {
         <div className="editor-heading">
           <div>
             <span className="eyebrow">YOUR WORKSPACE</span>
-            <h1>Screenshot notes</h1>
+            <h2>Screenshot notes</h2>
           </div>
           <span className="editor-session">
             {source ? "Unsaved session" : "A little clarity goes a long way."}
@@ -509,7 +509,7 @@ export default function App() {
           <Icon name="shield" size={14} />
           No uploads. No accounts. Just your browser.
         </span>
-        <span>Paste. Mark. Share.</span>
+        <a href="#how-it-works">How it works ↓</a>
       </footer>
       {pending && (
         <ReplaceDialog

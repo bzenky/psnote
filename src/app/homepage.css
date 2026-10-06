@@ -1,0 +1,116 @@
+#root {
+  min-height: max(660px, 100dvh);
+}
+#root:empty {
+  display: grid;
+  place-items: center;
+}
+#root:empty::before {
+  content: "Loading screenshot editor…";
+  color: var(--muted);
+}
+.homepage-info {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 64px 44px 80px;
+  border-top: 1px solid var(--border);
+  line-height: 1.7;
+}
+.homepage-intro {
+  max-width: 760px;
+}
+.homepage-info h1 {
+  margin: 12px 0 20px;
+  font-size: clamp(28px, 4vw, 40px);
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -1px;
+}
+.homepage-info h2 {
+  margin: 0 0 20px;
+  font-size: 22px;
+  font-weight: 550;
+  line-height: 1.4;
+  letter-spacing: -0.4px;
+}
+.homepage-info h3 {
+  margin: 0 0 12px;
+  font-size: 16px;
+  font-weight: 600;
+}
+.homepage-info p {
+  color: #acb0bd;
+  margin: 0 0 16px;
+}
+.homepage-info > section {
+  margin-top: 48px;
+  scroll-margin-top: 24px;
+}
+.homepage-link {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+.homepage-steps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 32px;
+  padding-left: 24px;
+}
+.homepage-steps li {
+  padding-left: 6px;
+}
+.homepage-steps li::marker {
+  color: var(--accent);
+  font-weight: 600;
+}
+.homepage-privacy {
+  padding: 24px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--panel);
+}
+.homepage-privacy p:last-child,
+.homepage-steps p {
+  margin-bottom: 0;
+}
+.homepage-faq details {
+  border-top: 1px solid var(--border);
+  padding: 16px 0;
+}
+.homepage-faq details:last-child {
+  border-bottom: 1px solid var(--border);
+}
+.homepage-faq summary {
+  cursor: pointer;
+  font-weight: 550;
+}
+.homepage-faq summary:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+}
+.homepage-faq details p {
+  margin: 12px 0 0;
+  max-width: 800px;
+}
+.javascript-notice {
+  max-width: 1120px;
+  margin: 24px auto;
+  padding: 0 44px;
+  line-height: 1.7;
+}
+@media (max-width: 800px) {
+  .homepage-info {
+    padding: 40px 24px 56px;
+  }
+  .homepage-steps {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+  .homepage-privacy {
+    padding: 20px;
+  }
+  .javascript-notice {
+    padding: 0 24px;
+  }
+}

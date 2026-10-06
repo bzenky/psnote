@@ -181,7 +181,7 @@ svg {
   font-weight: 650;
   color: var(--muted);
 }
-h1 {
+.editor-heading h2 {
   font-size: 24px;
   font-weight: 550;
   letter-spacing: -0.7px;
@@ -457,7 +457,7 @@ h1 {
   align-items: center;
   gap: 7px;
 }
-.app-footer > span:last-child {
+.app-footer > a {
   color: #8a9380;
   letter-spacing: 0.5px;
 }
