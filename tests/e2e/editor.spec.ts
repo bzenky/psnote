@@ -34,6 +34,9 @@ async function imageFile(
 async function load(page: Page) {
   await page.locator("input[type=file]").setInputFiles(await imageFile(page));
   await expect(page.getByTestId("image-size")).toHaveText("400 × 300");
+  // Exact-pixel assertions need integer zoom, not fractional fit-to-screen rounding.
+  await page.getByLabel("Zoom percentage").fill("100");
+  await page.getByLabel("Zoom percentage").blur();
 }
 async function draw(
   page: Page,
@@ -43,10 +46,14 @@ async function draw(
 ) {
   await page.getByRole("button", { name: tool, exact: true }).click();
   const box = (await page.getByTestId("canvas-surface").boundingBox())!;
-  const scale =
-    Number(
-      (await page.getByTestId("zoom-value").textContent())!.replace("%", ""),
-    ) / 100;
+  const documentWidth = Number(
+    (await page.getByTestId("image-size").textContent())!.split(" × ")[0],
+  );
+  const scale = box.width / documentWidth;
+  if (tool === "Text" || tool === "Number") {
+    await page.mouse.click(box.x + start[0] * scale, box.y + start[1] * scale);
+    return;
+  }
   await page.mouse.move(box.x + start[0] * scale, box.y + start[1] * scale);
   await page.mouse.down();
   await page.mouse.move(box.x + end[0] * scale, box.y + end[1] * scale, {
@@ -189,16 +196,16 @@ test("C17 arrow endpoints follow image coordinate drag", async ({ page }) => {
   await draw(page, "Arrow");
   await expect(page.getByTestId("annotation-count")).toHaveText("1 annotation");
   await expect(page.getByLabel("X position")).toHaveValue("60");
-  await expect(page.getByLabel("Width")).toHaveValue("100");
-  await expect(page.getByLabel("Height")).toHaveValue("80");
+  await expect(page.getByLabel("Width", { exact: true })).toHaveValue("100");
+  await expect(page.getByLabel("Height", { exact: true })).toHaveValue("80");
 });
 test("C18 rectangle spans image coordinate drag", async ({ page }) => {
   await load(page);
   await draw(page, "Rectangle");
   await expect(page.getByLabel("X position")).toHaveValue("60");
   await expect(page.getByLabel("Y position")).toHaveValue("60");
-  await expect(page.getByLabel("Width")).toHaveValue("100");
-  await expect(page.getByLabel("Height")).toHaveValue("80");
+  await expect(page.getByLabel("Width", { exact: true })).toHaveValue("100");
+  await expect(page.getByLabel("Height", { exact: true })).toHaveValue("80");
 });
 test("C19 text creation immediately focuses entry", async ({ page }) => {
   await load(page);
@@ -225,13 +232,13 @@ test("C23 select enables movement and resize controls", async ({ page }) => {
   await draw(page, "Rectangle");
   await page.getByRole("button", { name: "Select", exact: true }).click();
   for (const label of ["X position", "Y position", "Width", "Height"])
-    await expect(page.getByLabel(label)).toBeVisible();
+    await expect(page.getByLabel(label, { exact: true })).toBeVisible();
   await page.getByLabel("X position").fill("80");
   await page.getByLabel("X position").blur();
-  await page.getByLabel("Width").fill("150");
-  await page.getByLabel("Width").blur();
+  await page.getByLabel("Width", { exact: true }).fill("150");
+  await page.getByLabel("Width", { exact: true }).blur();
   await expect(page.getByLabel("X position")).toHaveValue("80");
-  await expect(page.getByLabel("Width")).toHaveValue("150");
+  await expect(page.getByLabel("Width", { exact: true })).toHaveValue("150");
 });
 test("C26 each annotation property set updates selected object", async ({
   page,
@@ -248,10 +255,10 @@ test("C26 each annotation property set updates selected object", async ({
         : tool === "Number"
           ? "Marker size"
           : "Stroke width";
-    await page.getByLabel(label).fill("12");
-    await page.getByLabel(label).blur();
+    await page.getByLabel(label, { exact: true }).fill("12");
+    await page.getByLabel(label, { exact: true }).blur();
     await expect(page.getByLabel("Annotation color")).toHaveValue("#22c55e");
-    await expect(page.getByLabel(label)).toHaveValue("12");
+    await expect(page.getByLabel(label, { exact: true })).toHaveValue("12");
   }
 });
 test("C40 PNG export retains dimensions at different zooms", async ({
@@ -477,18 +484,42 @@ test("C24 pointer resize retains image-space geometry after zoom change", async 
   await load(page);
   await draw(page, "Rectangle");
   const box = (await page.getByTestId("canvas-surface").boundingBox())!;
-  await page.mouse.move(box.x + 162, box.y + 142);
+  const scale = box.width / 400;
+  const x = Number(await page.getByLabel("X position").inputValue());
+  const y = Number(await page.getByLabel("Y position").inputValue());
+  const initialWidth = Number(
+    await page.getByLabel("Width", { exact: true }).inputValue(),
+  );
+  const initialHeight = Number(
+    await page.getByLabel("Height", { exact: true }).inputValue(),
+  );
+  const stroke = Number(await page.getByLabel("Stroke width").inputValue()) / 2;
+  const corner = {
+    x: box.x + (x + initialWidth + stroke) * scale,
+    y: box.y + (y + initialHeight + stroke) * scale,
+  };
+  await page.mouse.move(corner.x, corner.y);
   await page.mouse.down();
-  await page.mouse.move(box.x + 202, box.y + 182, { steps: 5 });
+  await page.mouse.move(corner.x + 40 * scale, corner.y + 40 * scale, {
+    steps: 5,
+  });
   await page.mouse.up();
-  const width = Number(await page.getByLabel("Width").inputValue());
-  const height = Number(await page.getByLabel("Height").inputValue());
+  const width = Number(
+    await page.getByLabel("Width", { exact: true }).inputValue(),
+  );
+  const height = Number(
+    await page.getByLabel("Height", { exact: true }).inputValue(),
+  );
   expect(width).toBeGreaterThan(100);
   expect(height).toBeGreaterThan(80);
   await page.getByLabel("Zoom percentage").fill("50");
   await page.getByLabel("Zoom percentage").blur();
-  expect(Number(await page.getByLabel("Width").inputValue())).toBe(width);
-  expect(Number(await page.getByLabel("Height").inputValue())).toBe(height);
+  expect(
+    Number(await page.getByLabel("Width", { exact: true }).inputValue()),
+  ).toBe(width);
+  expect(
+    Number(await page.getByLabel("Height", { exact: true }).inputValue()),
+  ).toBe(height);
 });
 test("C34 crop cancel preserves exported document and annotation history", async ({
   page,

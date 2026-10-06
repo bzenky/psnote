@@ -8,13 +8,16 @@ import {
   Arrow,
   Text,
   Circle,
+  Ellipse,
+  Line,
   Transformer,
 } from "react-konva";
 import Konva from "konva";
-import { shapeSpecs } from "../image/shapes";
+import { shapeSpecs, spotlightSpecs } from "../image/shapes";
 import {
   boundsFromPoints,
   newAnnotation,
+  newFreehandAnnotation,
   resizeAnnotation,
 } from "../state/editor-store";
 import type {
@@ -26,17 +29,19 @@ import type {
   Tool,
 } from "../types/editor";
 
-const shapeComponents = { Rect, Arrow, Text, Circle };
+const shapeComponents = { Rect, Arrow, Text, Circle, Ellipse, Line };
 function AnnotationShape({
   annotation,
   draggable,
   onSelect,
   onChange,
+  onPreview,
 }: {
   annotation: Annotation;
   draggable: boolean;
   onSelect: () => void;
   onChange: (a: Annotation) => void;
+  onPreview?: (a: Annotation | null) => void;
 }) {
   return (
     <Group
@@ -45,11 +50,28 @@ function AnnotationShape({
       x={annotation.x}
       y={annotation.y}
       draggable={draggable}
-      onClick={onSelect}
       onTap={onSelect}
-      onDragEnd={(e) =>
-        onChange({ ...annotation, x: e.target.x(), y: e.target.y() })
-      }
+      onDragMove={(e) => {
+        if (annotation.type === "spotlight")
+          onPreview?.({ ...annotation, x: e.target.x(), y: e.target.y() });
+      }}
+      onDragEnd={(e) => {
+        onChange({ ...annotation, x: e.target.x(), y: e.target.y() });
+        onPreview?.(null);
+      }}
+      onTransform={(e) => {
+        if (annotation.type !== "spotlight") return;
+        const node = e.target;
+        onPreview?.(
+          resizeAnnotation(
+            annotation,
+            node.x(),
+            node.y(),
+            node.scaleX(),
+            node.scaleY(),
+          ),
+        );
+      }}
       onTransformEnd={(e) => {
         const node = e.target;
         const updated = resizeAnnotation(
@@ -62,6 +84,7 @@ function AnnotationShape({
         node.scaleX(1);
         node.scaleY(1);
         onChange(updated);
+        onPreview?.(null);
       }}
     >
       {shapeSpecs(annotation).map((spec, i) => {
@@ -101,13 +124,26 @@ export function Canvas({
   const transformer = useRef<Konva.Transformer>(null);
   const start = useRef<Point | null>(null);
   const latestPoint = useRef<Point | null>(null);
+  const stroke = useRef<Point[]>([]);
   const [draft, setDraft] = useState<Annotation | null>(null);
+  const [spotlightPreview, setSpotlightPreview] = useState<Annotation | null>(
+    null,
+  );
   const { width, height } = document.crop;
   useEffect(() => {
     const node = selected && stage.current?.findOne(`#${selected}`);
     transformer.current?.nodes(node && tool === "select" ? [node] : []);
   }, [selected, tool, document.annotations]);
-  const point = (): Point | null => {
+  const cancel = () => {
+    start.current = null;
+    latestPoint.current = null;
+    stroke.current = [];
+    setDraft(null);
+    setSpotlightPreview(null);
+  };
+  useEffect(cancel, [tool, source, disabled]);
+  const point = (event?: MouseEvent): Point | null => {
+    if (event) stage.current?.setPointersPositions(event);
     const p = stage.current?.getPointerPosition();
     return p
       ? {
@@ -116,12 +152,35 @@ export function Canvas({
         }
       : null;
   };
-  const finish = () => {
-    if (!start.current || !latestPoint.current) return;
+  const move = (event: MouseEvent) => {
+    if (!start.current || disabled) return;
+    const p = point(event);
+    if (
+      !p ||
+      (p.x === latestPoint.current?.x && p.y === latestPoint.current?.y)
+    )
+      return;
+    latestPoint.current = p;
+    if (tool === "crop") onCrop(boundsFromPoints(start.current, p));
+    else if (tool === "freehand") {
+      const previous = stroke.current.at(-1)!;
+      if (Math.hypot(p.x - previous.x, p.y - previous.y) < 0.5) return;
+      stroke.current.push(p);
+      setDraft(newFreehandAnnotation(stroke.current));
+    } else {
+      setDraft(newAnnotation(tool, start.current, p, document.annotations));
+    }
+  };
+  const finish = (event: MouseEvent) => {
+    if (!start.current || !latestPoint.current || disabled) return;
+    move(event);
     const bounds = boundsFromPoints(start.current, latestPoint.current);
     if (tool === "crop")
       onCrop(bounds.width >= 1 && bounds.height >= 1 ? bounds : null);
-    else if (
+    else if (tool === "freehand") {
+      const a = newFreehandAnnotation(stroke.current);
+      if (a) add(a);
+    } else if (
       tool === "arrow"
         ? Math.hypot(bounds.width, bounds.height) >= 1
         : bounds.width >= 1 && bounds.height >= 1
@@ -134,14 +193,24 @@ export function Canvas({
       );
       if (a) add(a);
     }
-    start.current = null;
-    latestPoint.current = null;
-    setDraft(null);
+    cancel();
   };
   useEffect(() => {
+    const blur = () => cancel();
+    window.addEventListener("mousemove", move);
     window.addEventListener("mouseup", finish);
-    return () => window.removeEventListener("mouseup", finish);
+    window.addEventListener("blur", blur);
+    return () => {
+      window.removeEventListener("mousemove", move);
+      window.removeEventListener("mouseup", finish);
+      window.removeEventListener("blur", blur);
+    };
   });
+  const maskAnnotations = document.annotations.map((a) =>
+    spotlightPreview?.id === a.id ? spotlightPreview : a,
+  );
+  if (draft?.type === "spotlight") maskAnnotations.push(draft);
+  const mask = spotlightSpecs(maskAnnotations, width, height);
   return (
     <div
       className={`canvas-surface tool-${tool}`}
@@ -156,6 +225,7 @@ export function Canvas({
         scaleY={zoom}
         listening={!disabled}
         onMouseDown={(e) => {
+          if (e.evt.button !== 0) return;
           const p = point();
           if (!p) return;
           if (tool === "select") {
@@ -168,6 +238,8 @@ export function Canvas({
             select(node?.id() ?? null);
             return;
           }
+          // Prevent the canvas's native focus action from stealing text-field focus.
+          e.evt.preventDefault();
           select(null);
           if (tool === "text" || tool === "marker") {
             const a = newAnnotation(tool, p, p, document.annotations);
@@ -176,20 +248,11 @@ export function Canvas({
           }
           start.current = p;
           latestPoint.current = p;
+          stroke.current = [p];
           if (tool === "crop") onCrop(null);
         }}
-        onMouseMove={() => {
-          if (!start.current) return;
-          const p = point();
-          if (!p) return;
-          latestPoint.current = p;
-          if (tool === "crop") onCrop(boundsFromPoints(start.current, p));
-          else
-            setDraft(
-              newAnnotation(tool, start.current, p, document.annotations),
-            );
-        }}
-        onMouseUp={finish}
+        onMouseMove={(e) => move(e.evt)}
+        onMouseUp={(e) => finish(e.evt)}
       >
         <Layer listening={false}>
           <CanvasImage
@@ -198,6 +261,14 @@ export function Canvas({
             y={-document.crop.y}
           />
         </Layer>
+        {mask.length > 0 && (
+          <Layer listening={false}>
+            {mask.map((spec, i) => {
+              const Shape = shapeComponents[spec.kind];
+              return <Shape key={i} {...spec.props} />;
+            })}
+          </Layer>
+        )}
         <Layer>
           <Group clipX={0} clipY={0} clipWidth={width} clipHeight={height}>
             {document.annotations.map((annotation) => (
@@ -209,6 +280,7 @@ export function Canvas({
                   if (tool === "select") select(annotation.id);
                 }}
                 onChange={change}
+                onPreview={setSpotlightPreview}
               />
             ))}
             {draft && (

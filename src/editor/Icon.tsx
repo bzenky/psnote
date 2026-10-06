@@ -13,6 +13,10 @@ export function Icon({
     pan: "M8 13V6a2 2 0 014 0v6-8a2 2 0 014 0v8-6a2 2 0 014 0v9c0 4-2 7-6 7h-2c-2 0-3-1-4-3l-4-6a2 2 0 013-2l3 3",
     arrow: "M5 19L19 5M9 5h10v10",
     rectangle: "M4 5h16v14H4z",
+    ellipse: "M21 12a9 7 0 11-18 0 9 7 0 0118 0z",
+    freehand: "M4 20l4-1L20 7l-3-3L5 16l-1 4zM14 7l3 3",
+    spotlight:
+      "M3 3h5M3 3v5M21 3h-5M21 3v5M3 21h5M3 21v-5M21 21h-5M21 21v-5M8 8h8v8H8z",
     text: "M4 5h16M12 5v15M8 20h8",
     redaction: "M4 7h16v10H4zM7 10h10M7 14h10",
     marker: "M12 3a9 9 0 100 18 9 9 0 000-18M10 9l2-1v8M10 16h4",

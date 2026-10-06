@@ -1,5 +1,5 @@
 import Konva from "konva";
-import { shapeSpecs } from "./shapes";
+import { shapeSpecs, spotlightSpecs } from "./shapes";
 import type { EditorDocument, ImageSource } from "../types/editor";
 
 export async function renderPNG(
@@ -14,16 +14,27 @@ export async function renderPNG(
     height: crop.height,
   });
   try {
-    const layer = new Konva.Layer();
-    stage.add(layer);
-    layer.add(new Konva.Image({ image: source.image, x: -crop.x, y: -crop.y }));
+    const sourceLayer = new Konva.Layer();
+    stage.add(sourceLayer);
+    sourceLayer.add(
+      new Konva.Image({ image: source.image, x: -crop.x, y: -crop.y }),
+    );
+    const maskSpecs = spotlightSpecs(annotations, crop.width, crop.height);
+    if (maskSpecs.length) {
+      const spotlightLayer = new Konva.Layer();
+      stage.add(spotlightLayer);
+      for (const spec of maskSpecs)
+        spotlightLayer.add(new Konva[spec.kind](spec.props));
+    }
+    const annotationsLayer = new Konva.Layer();
+    stage.add(annotationsLayer);
     for (const annotation of annotations) {
       const group = new Konva.Group({ x: annotation.x, y: annotation.y });
       for (const spec of shapeSpecs(annotation))
         group.add(new Konva[spec.kind](spec.props));
-      layer.add(group);
+      annotationsLayer.add(group);
     }
-    layer.draw();
+    stage.draw();
     const canvas = stage.toCanvas({ pixelRatio: 1 });
     return await new Promise<Blob>((resolve, reject) =>
       canvas.toBlob(

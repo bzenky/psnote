@@ -95,6 +95,36 @@ export function boundsFromPoints(start: Point, end: Point): Bounds {
     height: Math.abs(end.y - start.y),
   };
 }
+export function newFreehandAnnotation(points: Point[]): Annotation | null {
+  if (points.length < 2) return null;
+  let x = points[0].x;
+  let y = points[0].y;
+  let right = x;
+  let bottom = y;
+  for (const point of points) {
+    x = Math.min(x, point.x);
+    y = Math.min(y, point.y);
+    right = Math.max(right, point.x);
+    bottom = Math.max(bottom, point.y);
+  }
+  if (Math.max(right - x, bottom - y) < 1) return null;
+  const width = Math.max(1, right - x);
+  const height = Math.max(1, bottom - y);
+  return {
+    id: crypto.randomUUID(),
+    type: "freehand",
+    x,
+    y,
+    width,
+    height,
+    color: "#ef4444",
+    strokeWidth: 4,
+    points: points.map((point) => ({
+      x: (point.x - x) / width,
+      y: (point.y - y) / height,
+    })),
+  };
+}
 export function newAnnotation(
   tool: Tool,
   start: Point,
@@ -116,7 +146,12 @@ export function newAnnotation(
         strokeWidth: 4,
       };
     case "rectangle":
-      return { id, type: "rectangle", ...bounds, color, strokeWidth: 4 };
+    case "ellipse":
+      return { id, type: tool, ...bounds, color, strokeWidth: 4 };
+    case "spotlight":
+      return { id, type: "spotlight", ...bounds };
+    case "freehand":
+      return newFreehandAnnotation([start, end]);
     case "redaction":
       return { id, type: "redaction", ...bounds };
     case "text":
@@ -194,7 +229,9 @@ export function cropDocument(
       const pad =
         a.type === "arrow"
           ? a.strokeWidth * 3
-          : a.type === "rectangle"
+          : a.type === "rectangle" ||
+              a.type === "ellipse" ||
+              a.type === "freehand"
             ? a.strokeWidth / 2
             : 0;
       const left = Math.min(a.x, a.x + a.width) - pad;

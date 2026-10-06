@@ -53,13 +53,18 @@ export function PropertiesPanel({
   return (
     <section className="properties" aria-label="Selected annotation properties">
       <span className="properties-title">
-        {annotation.type === "redaction"
-          ? "Redaction"
-          : annotation.type === "marker"
-            ? `Marker ${annotation.number}`
-            : annotation.type.charAt(0).toUpperCase() +
-              annotation.type.slice(1)}
+        {annotation.type === "freehand"
+          ? "Free draw"
+          : annotation.type === "redaction"
+            ? "Redaction"
+            : annotation.type === "marker"
+              ? `Marker ${annotation.number}`
+              : annotation.type.charAt(0).toUpperCase() +
+                annotation.type.slice(1)}
       </span>
+      {annotation.type === "spotlight" && (
+        <span className="property-note">Emphasis only, not redaction.</span>
+      )}
       {"color" in annotation && (
         <label className="color-field">
           <span>Color</span>

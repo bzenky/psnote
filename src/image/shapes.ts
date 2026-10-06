@@ -1,6 +1,6 @@
 import type { Annotation } from "../types/editor";
 export type ShapeSpec = {
-  kind: "Rect" | "Arrow" | "Text" | "Circle";
+  kind: "Rect" | "Arrow" | "Text" | "Circle" | "Ellipse" | "Line";
   props: Record<string, string | number | boolean | number[]>;
 };
 // The interactive editor and export compositor consume the same shape descriptions.
@@ -16,6 +16,43 @@ export function shapeSpecs(a: Annotation): ShapeSpec[] {
             stroke: a.color,
             strokeWidth: a.strokeWidth,
           },
+        },
+      ];
+    case "ellipse":
+      return [
+        {
+          kind: "Ellipse",
+          props: {
+            x: a.width / 2,
+            y: a.height / 2,
+            radiusX: a.width / 2,
+            radiusY: a.height / 2,
+            stroke: a.color,
+            strokeWidth: a.strokeWidth,
+          },
+        },
+      ];
+    case "freehand":
+      return [
+        {
+          kind: "Line",
+          props: {
+            points: a.points.flatMap((point) => [
+              point.x * a.width,
+              point.y * a.height,
+            ]),
+            stroke: a.color,
+            strokeWidth: a.strokeWidth,
+            lineCap: "round",
+            lineJoin: "round",
+          },
+        },
+      ];
+    case "spotlight":
+      return [
+        {
+          kind: "Rect",
+          props: { width: a.width, height: a.height, fill: "transparent" },
         },
       ];
     case "arrow":
@@ -94,4 +131,32 @@ export function shapeSpecs(a: Annotation): ShapeSpec[] {
         },
       ];
   }
+}
+
+// Composite these specs on a dedicated layer between the source and annotations.
+// Opaque destination-out holes clear the mask, including overlapping regions.
+export function spotlightSpecs(
+  annotations: Annotation[],
+  width: number,
+  height: number,
+): ShapeSpec[] {
+  const spotlights = annotations.filter((a) => a.type === "spotlight");
+  if (!spotlights.length) return [];
+  return [
+    {
+      kind: "Rect",
+      props: { x: 0, y: 0, width, height, fill: "#000000", opacity: 0.6 },
+    },
+    ...spotlights.map((a): ShapeSpec => ({
+      kind: "Rect",
+      props: {
+        x: a.x,
+        y: a.y,
+        width: a.width,
+        height: a.height,
+        fill: "#000000",
+        globalCompositeOperation: "destination-out",
+      },
+    })),
+  ];
 }

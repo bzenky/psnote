@@ -271,13 +271,18 @@ describe("document editing", () => {
 });
 
 describe("keyboard mapping", () => {
-  it("C37 maps all seven tool letters", () => {
+  it("C37 maps all ten annotation tool letters", () => {
     expect(
-      ["v", "a", "r", "t", "b", "n", "c"].map((key) => shortcutAction({ key })),
+      ["v", "a", "r", "e", "p", "s", "t", "b", "n", "c"].map((key) =>
+        shortcutAction({ key }),
+      ),
     ).toEqual([
       "select",
       "arrow",
       "rectangle",
+      "ellipse",
+      "freehand",
+      "spotlight",
       "text",
       "redaction",
       "marker",
@@ -285,7 +290,20 @@ describe("keyboard mapping", () => {
     ]);
   });
   it("C38 leaves editable field shortcuts and Delete native", () => {
-    for (const key of ["v", "a", "r", "t", "b", "n", "c", "Delete", "z"])
+    for (const key of [
+      "v",
+      "a",
+      "r",
+      "e",
+      "p",
+      "s",
+      "t",
+      "b",
+      "n",
+      "c",
+      "Delete",
+      "z",
+    ])
       expect(shortcutAction({ key, editable: true, ctrlKey: true })).toBeNull();
   });
   it("C39 maps history deletion and view keys on both platforms", () => {

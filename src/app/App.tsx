@@ -375,7 +375,11 @@ export default function App() {
             ) : (
               <div className="context-hint">
                 {source
-                  ? "Select an annotation to edit it. Hold Space and drag to pan."
+                  ? tool === "spotlight"
+                    ? "Drag to spotlight an area. Visual emphasis only, not redaction."
+                    : tool === "freehand"
+                      ? "Drag to draw a stroke. Hold Space and drag to pan."
+                      : "Select an annotation to edit it. Hold Space and drag to pan."
                   : "Open an image to start annotating."}
               </div>
             )}

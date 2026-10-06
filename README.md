@@ -27,6 +27,7 @@ PNG, JPEG, and WebP, up to 20 MiB and 20 million decoded pixels.
 | H                  | Toggle Pan to reposition the image view     |
 | Space + drag       | Temporarily pan without switching tools     |
 | A / R / T          | Arrow / Rectangle / Text                    |
+| E / P / S          | Ellipse / Free draw / Spotlight             |
 | B / N / C          | Solid redaction / Number marker / Crop      |
 | Delete             | Delete selected annotation                  |
 | Ctrl/⌘ + Z         | Undo                                        |
@@ -36,6 +37,11 @@ PNG, JPEG, and WebP, up to 20 MiB and 20 million decoded pixels.
 Drag with **Pan**, hold **Space**, or use the middle mouse button to reposition
 the image view. **Fit to screen** resets the position. Panning does not change
 annotations, undo history, or the copied/exported image.
+
+Ellipse highlights a region with an outline; use equal width and height for a
+circle. Free draw creates editable strokes with adjustable color, width, and
+bounds. Spotlight dims the background outside one or more selected regions;
+it is visual emphasis, **not redaction**. Use solid redaction for sensitive data.
 
 Edit selected annotations with the contextual properties. Text changes commit
 when the field loses focus. Use **Apply crop** or **Cancel crop** after selecting

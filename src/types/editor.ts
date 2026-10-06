@@ -1,5 +1,14 @@
 export type Tool =
-  "select" | "arrow" | "rectangle" | "text" | "redaction" | "marker" | "crop";
+  | "select"
+  | "arrow"
+  | "rectangle"
+  | "ellipse"
+  | "freehand"
+  | "spotlight"
+  | "text"
+  | "redaction"
+  | "marker"
+  | "crop";
 export interface Point {
   x: number;
   y: number;
@@ -13,10 +22,18 @@ interface BaseAnnotation extends Bounds {
 }
 export type Annotation =
   | (BaseAnnotation & {
-      type: "arrow" | "rectangle";
+      type: "arrow" | "rectangle" | "ellipse";
       color: string;
       strokeWidth: number;
     })
+  | (BaseAnnotation & {
+      type: "freehand";
+      color: string;
+      strokeWidth: number;
+      // Local coordinates in [0, 1], scaled by width and height when rendering.
+      points: Point[];
+    })
+  | (BaseAnnotation & { type: "spotlight" })
   | (BaseAnnotation & { type: "redaction" })
   | (BaseAnnotation & {
       type: "text";
