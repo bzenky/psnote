@@ -39,8 +39,11 @@ source pixels in the flattened output; annotations remain editable in the sessio
 
 Sessions exist only in memory. Reloading discards them. Replacing an annotated
 image asks for confirmation. Copy or export anything you want to keep first.
-There are no accounts, uploads, persistence, third-party image processing, or
-analytics. Dependencies are bundled; fonts and icons use local assets.
+There are no accounts, image uploads, saved editing sessions, or third-party image
+processing. Google Analytics collects site usage data only in production builds
+on `www.psnote.bzenky.dev`; no custom events send image data, filenames, or
+annotation content. Editor dependencies are bundled; fonts and icons use local
+assets.
 
 ## Develop and verify
 
