@@ -118,6 +118,112 @@ test("annotation and crop options do not resize or move the workspace", async ({
   }
 });
 
+test("interactive icons animate without moving buttons or the canvas", async ({
+  page,
+}) => {
+  await page.emulateMedia({ reducedMotion: "no-preference" });
+  await page.goto("/");
+  const arrow = page.getByRole("button", { name: "Arrow", exact: true });
+  await arrow.hover();
+  await expect(arrow.locator(".ui-icon")).toHaveCSS("transform", "none");
+  await expect(arrow.locator(".ui-icon")).toHaveCSS("animation-name", "none");
+  await loadImage(page);
+  const before = await arrow.boundingBox();
+  const canvas = await page.getByTestId("canvas-surface").boundingBox();
+  await arrow.hover();
+  await expect(arrow.locator(".ui-icon")).not.toHaveCSS("transform", "none");
+  expect(await arrow.boundingBox()).toEqual(before);
+  await arrow.click();
+  await expect(arrow.locator(".ui-icon")).toHaveCSS("animation-name", "none");
+  expect(await page.getByTestId("canvas-surface").boundingBox()).toEqual(
+    canvas,
+  );
+  await expect(
+    page.locator('.app-footer .ui-icon[data-icon="shield"]'),
+  ).toHaveCSS("animation-name", "none");
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await expect(arrow.locator(".ui-icon")).toHaveCSS("animation-name", "none");
+  await expect(arrow.locator(".ui-icon")).toHaveCSS("transform", "none");
+});
+
+test("history actions work without decorative icon animations", async ({
+  page,
+}) => {
+  await page.emulateMedia({ reducedMotion: "no-preference" });
+  await page.goto("/");
+  await loadImage(page);
+  for (let index = 0; index < 3; index++) {
+    await page.getByRole("button", { name: "Number", exact: true }).click();
+    const box = (await page.getByTestId("canvas-surface").boundingBox())!;
+    await page.mouse.click(box.x + 40 + index * 40, box.y + 60);
+  }
+  const undo = page.getByRole("button", { name: "Undo", exact: true });
+  const redo = page.getByRole("button", { name: "Redo", exact: true });
+  await undo.click();
+  await expect(undo.locator(".ui-icon")).toHaveCSS("animation-name", "none");
+  await page.keyboard.press("Control+z");
+  await expect(page.getByTestId("annotation-count")).toHaveText("1 annotation");
+  await expect(undo.locator(".ui-icon")).toHaveCSS("animation-name", "none");
+  await redo.click();
+  await expect(redo.locator(".ui-icon")).toHaveCSS("animation-name", "none");
+  await expect(page.getByTestId("annotation-count")).toHaveText(
+    "2 annotations",
+  );
+});
+
+for (const reducedMotion of ["no-preference", "reduce"] as const) {
+  test(`copy feedback waits for success and resets (${reducedMotion})`, async ({
+    page,
+  }) => {
+    await page.emulateMedia({ reducedMotion });
+    await page.goto("/");
+    await loadImage(page);
+    await page.evaluate(() => {
+      Object.defineProperty(window, "ClipboardItem", {
+        configurable: true,
+        value: class {},
+      });
+      Object.defineProperty(navigator, "clipboard", {
+        configurable: true,
+        value: {
+          write: () =>
+            new Promise<void>((resolve) => {
+              (window as unknown as { finishCopy: () => void }).finishCopy =
+                resolve;
+            }),
+        },
+      });
+    });
+    const copy = page.getByRole("button", { name: "Copy image", exact: true });
+    await copy.click();
+    await expect(copy.locator(".ui-icon")).toHaveAttribute("data-icon", "copy");
+    await expect(page.getByRole("status")).not.toContainText("Image copied");
+    await page.evaluate(() =>
+      (window as unknown as { finishCopy: () => void }).finishCopy(),
+    );
+    await expect(copy.locator(".ui-icon")).toHaveAttribute(
+      "data-icon",
+      "check",
+    );
+    await expect(copy.locator(".ui-icon")).toHaveCSS(
+      "animation-name",
+      reducedMotion === "reduce" ? "none" : "icon-confirm",
+    );
+    await expect(copy.locator(".ui-icon")).toHaveAttribute("data-icon", "copy");
+    await page.evaluate(() =>
+      Object.defineProperty(navigator, "clipboard", {
+        configurable: true,
+        value: { write: () => Promise.reject(new Error("Denied")) },
+      }),
+    );
+    await copy.click();
+    await expect(page.getByRole("status")).toContainText(
+      "Could not copy image",
+    );
+    await expect(copy.locator(".ui-icon")).toHaveAttribute("data-icon", "copy");
+  });
+}
+
 test("reduced motion disables entrance effects and interaction transitions", async ({
   page,
 }) => {

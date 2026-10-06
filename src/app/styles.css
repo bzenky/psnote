@@ -649,6 +649,25 @@ button:active:not(:disabled) {
 .primary-button:hover:not(:disabled) {
   box-shadow: 0 3px 14px #c8ee8218;
 }
+.ui-icon {
+  transform-box: fill-box;
+  transform-origin: center;
+  transition: transform 180ms var(--motion-ease);
+}
+@media (hover: hover) {
+  .app-shell button:hover:not(:disabled) > .ui-icon {
+    transform: translateY(-1px);
+  }
+}
+
+.ui-icon[data-motion="confirm"] {
+  animation: icon-confirm 260ms var(--motion-ease);
+}
+.app-shell button:disabled > .ui-icon {
+  animation: none;
+  transform: none;
+  transition: none;
+}
 .empty-state,
 .properties,
 .crop-controls,
@@ -681,7 +700,7 @@ button:active:not(:disabled) {
   pointer-events: none;
   animation: editor-loading 1200ms ease-in-out infinite;
 }
-.output-controls[aria-busy="true"] svg {
+.output-controls[aria-busy="true"] button:disabled > .ui-icon {
   animation: editor-working 800ms ease-in-out infinite alternate;
 }
 .replace-dialog[open] {
@@ -689,6 +708,21 @@ button:active:not(:disabled) {
 }
 .replace-dialog[open]::backdrop {
   animation: editor-fade-in var(--motion-enter) ease-out;
+}
+
+@keyframes icon-confirm {
+  0% {
+    opacity: 0;
+    transform: scale(0.7);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.12);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
 }
 @keyframes editor-fade-in {
   from {
@@ -732,7 +766,8 @@ button:active:not(:disabled) {
     animation: none !important;
     transition: none !important;
   }
-  button:active:not(:disabled) {
+  button:active:not(:disabled),
+  .app-shell button:hover:not(:disabled) > .ui-icon[data-icon] {
     transform: none;
   }
   .empty-illustration:hover .image-card {

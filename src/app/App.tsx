@@ -35,6 +35,7 @@ export default function App() {
   const [fitting, setFitting] = useState(true);
   const [loading, setLoading] = useState(false);
   const [outputting, setOutputting] = useState(false);
+  const [copied, setCopied] = useState(false);
   const [message, setMessage] = useState("Ready when you are.");
   const [dragging, setDragging] = useState(false);
   const [pending, setPending] = useState<ImageSource | null>(null);
@@ -50,6 +51,12 @@ export default function App() {
   const pan = usePan(!!source && !loading && !pending, () => setFitting(false));
 
   useEffect(() => () => releaseSource(source), [source]);
+  useEffect(() => setCopied(false), [document]);
+  useEffect(() => {
+    if (!copied) return;
+    const timeout = window.setTimeout(() => setCopied(false), 1600);
+    return () => window.clearTimeout(timeout);
+  }, [copied]);
   useEffect(() => {
     const requests = coordinator.current;
     return () => {
@@ -91,6 +98,7 @@ export default function App() {
 
   const acceptSource = (candidate: ImageSource) => {
     setSource(candidate);
+    setCopied(false);
     pan.reset();
     pan.setHandTool(false);
     dispatch({
@@ -226,11 +234,13 @@ export default function App() {
     if (!source || outputting) return;
     dispatch({ type: "commit" });
     setOutputting(true);
+    setCopied(false);
     setMessage(copy ? "Copying image…" : "Preparing PNG…");
     const bitmap = renderPNG(source, document);
     try {
       if (copy) {
         await copyPNG(bitmap);
+        if (historyRef.current.present === document) setCopied(true);
         setMessage("Image copied. Ready to paste anywhere.");
       } else {
         downloadPNG(await bitmap);
@@ -517,7 +527,11 @@ export default function App() {
                 disabled={disabled || outputting}
                 onClick={() => void output(true)}
               >
-                <Icon name="copy" />
+                <Icon
+                  key={copied ? "confirmed" : "copy"}
+                  name={copied ? "check" : "copy"}
+                  motion={copied ? "confirm" : undefined}
+                />
                 <span>Copy image</span>
               </button>
             </div>

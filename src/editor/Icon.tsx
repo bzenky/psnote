@@ -3,10 +3,12 @@ export function Icon({
   name,
   size = 18,
   style,
+  motion,
 }: {
   name: string;
   size?: number;
   style?: CSSProperties;
+  motion?: "confirm";
 }) {
   const paths: Record<string, string> = {
     select: "M5 3l14 9-7 1-3 7-4-17z",
@@ -35,6 +37,9 @@ export function Icon({
   };
   return (
     <svg
+      className="ui-icon"
+      data-icon={name}
+      data-motion={motion}
       width={size}
       height={size}
       viewBox="0 0 24 24"
