@@ -12,9 +12,14 @@ npm ci
 npm run dev
 ```
 
-Open the local URL printed by Vite. Clipboard image writing needs a secure context:
-use localhost during development and HTTPS when hosting. Browsers may ask for
-permission; **Export PNG** remains available if copying is unavailable.
+Open the local URL printed by Vite, or use its Network URL on a phone connected
+to the same network. The development server listens on all network interfaces;
+your firewall must allow its port for other devices to connect.
+
+Clipboard image writing needs a secure context: use localhost during development
+and HTTPS when hosting. Plain HTTP Network URLs may not support image copying.
+Browsers may ask for permission; **Export PNG** remains available if copying is
+unavailable.
 
 ## Annotate
 
@@ -37,6 +42,19 @@ PNG, JPEG, and WebP, up to 20 MiB and 20 million decoded pixels.
 Drag with **Pan**, hold **Space**, or use the middle mouse button to reposition
 the image view. **Fit to screen** resets the position. Panning does not change
 annotations, undo history, or the copied/exported image.
+
+On phones and tablets, choose **Open image**, then tap a tool and drag with one
+finger to draw, redact, or crop. Tap to place text or number markers; use
+**Select** to move annotations and **Pan** to reposition the image. Canvas
+gestures are reserved for editing rather than page scrolling or pinch-to-zoom;
+use the zoom controls instead. Mobile clipboard support varies by browser, so
+use **Export PNG** if copying is unavailable.
+
+A loading overlay appears while the browser opens and decodes an image locally.
+On screens up to 600px wide, new arrows, rectangles, ellipses, and freehand strokes
+default to a 6px stroke instead of the desktop 4px default. These widths are in
+image pixels; changing the screen size does not restyle existing annotations.
+You can still adjust stroke width in the selected annotation's properties.
 
 Ellipse highlights a region with an outline; use equal width and height for a
 circle. Free draw creates editable strokes with adjustable color, width, and

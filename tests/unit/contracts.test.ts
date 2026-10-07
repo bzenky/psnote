@@ -40,8 +40,8 @@ describe("foundation", () => {
     for (const version of Object.values(pkg.dependencies))
       expect(version).toMatch(/^\d+\.\d+\.\d+$/);
   });
-  it("C2 local development command", () =>
-    expect(pkg.scripts.dev).toBe("vite --host 127.0.0.1"));
+  it("C2 network-accessible development command", () =>
+    expect(pkg.scripts.dev).toBe("vite --host 0.0.0.0"));
   it("C3 static build command", () =>
     expect(pkg.scripts.build).toBe("tsc --noEmit && vite build"));
   it("C4 verification stops on failed gates", () =>

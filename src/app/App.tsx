@@ -394,76 +394,94 @@ export default function App() {
               </div>
             )}
           </div>
-          <div
-            ref={workspace}
-            className={`workspace ${source ? "has-image" : ""} ${pan.active ? "pan-ready" : ""} ${pan.dragging ? "is-panning" : ""}`}
-            aria-busy={loading}
-            {...pan.handlers}
-          >
-            {source ? (
-              <div
-                className="canvas-placement"
-                style={{
-                  width: document.crop.width * zoom,
-                  height: document.crop.height * zoom,
-                  transform: `translate(${pan.offset.x}px, ${pan.offset.y}px)`,
-                }}
-              >
-                <Canvas
-                  source={source}
-                  document={document}
-                  tool={tool}
-                  zoom={zoom}
-                  selected={selected}
-                  select={(id) => {
-                    setSelected(id);
-                    setFocusText(false);
+          <div className="workspace-viewport">
+            <div
+              ref={workspace}
+              className={`workspace ${source ? "has-image" : ""} ${pan.active ? "pan-ready" : ""} ${pan.dragging ? "is-panning" : ""}`}
+              aria-busy={loading}
+              {...pan.handlers}
+            >
+              {source ? (
+                <div
+                  className="canvas-placement"
+                  style={{
+                    width: document.crop.width * zoom,
+                    height: document.crop.height * zoom,
+                    transform: `translate(${pan.offset.x}px, ${pan.offset.y}px)`,
                   }}
-                  add={add}
-                  change={(a) => update(a)}
-                  crop={crop}
-                  onCrop={setCrop}
-                  disabled={disabled || pan.active}
-                />
-              </div>
-            ) : (
-              <div className="empty-state">
-                <div className="empty-illustration">
-                  <div className="image-card">
-                    <Icon name="image" size={50} />
-                  </div>
-                  <span className="illustration-arrow">
-                    <Icon name="arrow" size={34} />
-                  </span>
-                  <span className="illustration-dot" />
-                </div>
-                <span className="eyebrow">LESS EDITING. MORE EXPLAINING.</span>
-                <h2>Paste a screenshot to start</h2>
-                <p>
-                  Drop an image here, paste from your clipboard,
-                  <br />
-                  or pick a file. The rest is just a few marks away.
-                </p>
-                <button
-                  className="primary-button"
-                  onClick={() => input.current?.click()}
                 >
-                  <Icon name="upload" />
-                  Open image
-                </button>
-                <span className="paste-hint">
-                  or press <kbd>Ctrl / ⌘ + V</kbd>
-                </span>
-                <div className="empty-privacy">
-                  <Icon name="shield" size={15} />
-                  Your images never leave your browser.
+                  <Canvas
+                    source={source}
+                    document={document}
+                    tool={tool}
+                    zoom={zoom}
+                    selected={selected}
+                    select={(id) => {
+                      setSelected(id);
+                      setFocusText(false);
+                    }}
+                    add={add}
+                    change={(a) => update(a)}
+                    crop={crop}
+                    onCrop={setCrop}
+                    disabled={disabled || pan.active}
+                  />
                 </div>
-              </div>
-            )}
-            {dragging && (
-              <div className="drop-overlay">
-                <Icon name="upload" size={36} />
-                <span>Drop your screenshot here</span>
+              ) : (
+                <div className="empty-state">
+                  <div className="empty-illustration">
+                    <div className="image-card">
+                      <Icon name="image" size={50} />
+                    </div>
+                    <span className="illustration-arrow">
+                      <Icon name="arrow" size={34} />
+                    </span>
+                    <span className="illustration-dot" />
+                  </div>
+                  <span className="eyebrow">
+                    LESS EDITING. MORE EXPLAINING.
+                  </span>
+                  <h2>Paste a screenshot to start</h2>
+                  <p>
+                    Drop an image here, paste from your clipboard,
+                    <br />
+                    or pick a file. The rest is just a few marks away.
+                  </p>
+                  <button
+                    className="primary-button"
+                    onClick={() => input.current?.click()}
+                  >
+                    <Icon name="upload" />
+                    Open image
+                  </button>
+                  <span className="paste-hint">
+                    or press <kbd>Ctrl / ⌘ + V</kbd>
+                  </span>
+                  <div className="empty-privacy">
+                    <Icon name="shield" size={15} />
+                    Your images never leave your browser.
+                  </div>
+                </div>
+              )}
+              {dragging && (
+                <div className="drop-overlay">
+                  <Icon name="upload" size={36} />
+                  <span>Drop your screenshot here</span>
+                </div>
+              )}
+            </div>
+            {loading && (
+              <div
+                className="image-loading-overlay"
+                role="progressbar"
+                aria-label="Loading image"
+                aria-describedby="image-loading-privacy"
+              >
+                <span className="image-loading-spinner" aria-hidden="true" />
+                <strong>Loading image…</strong>
+                <p id="image-loading-privacy">
+                  Processing locally. Your image stays in your browser.
+                </p>
               </div>
             )}
           </div>

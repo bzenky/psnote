@@ -125,6 +125,8 @@ export function Canvas({
   const start = useRef<Point | null>(null);
   const latestPoint = useRef<Point | null>(null);
   const stroke = useRef<Point[]>([]);
+  const strokeWidth = useRef(4);
+  const touchId = useRef<number | null>(null);
   const [draft, setDraft] = useState<Annotation | null>(null);
   const [spotlightPreview, setSpotlightPreview] = useState<Annotation | null>(
     null,
@@ -138,12 +140,19 @@ export function Canvas({
     start.current = null;
     latestPoint.current = null;
     stroke.current = [];
+    touchId.current = null;
     setDraft(null);
     setSpotlightPreview(null);
   };
   useEffect(cancel, [tool, source, disabled]);
-  const point = (event?: MouseEvent): Point | null => {
-    if (event) stage.current?.setPointersPositions(event);
+  const point = (event?: MouseEvent | TouchEvent): Point | null => {
+    if (event && "touches" in event) {
+      const touch = [...event.touches, ...event.changedTouches].find(
+        (touch) => touch.identifier === touchId.current,
+      );
+      if (!touch) return null;
+      stage.current?.setPointersPositions(touch);
+    } else if (event) stage.current?.setPointersPositions(event);
     const p = stage.current?.getPointerPosition();
     return p
       ? {
@@ -152,7 +161,7 @@ export function Canvas({
         }
       : null;
   };
-  const move = (event: MouseEvent) => {
+  const move = (event: MouseEvent | TouchEvent) => {
     if (!start.current || disabled) return;
     const p = point(event);
     if (
@@ -166,19 +175,27 @@ export function Canvas({
       const previous = stroke.current.at(-1)!;
       if (Math.hypot(p.x - previous.x, p.y - previous.y) < 0.5) return;
       stroke.current.push(p);
-      setDraft(newFreehandAnnotation(stroke.current));
+      setDraft(newFreehandAnnotation(stroke.current, strokeWidth.current));
     } else {
-      setDraft(newAnnotation(tool, start.current, p, document.annotations));
+      setDraft(
+        newAnnotation(
+          tool,
+          start.current,
+          p,
+          document.annotations,
+          strokeWidth.current,
+        ),
+      );
     }
   };
-  const finish = (event: MouseEvent) => {
+  const finish = (event: MouseEvent | TouchEvent) => {
     if (!start.current || !latestPoint.current || disabled) return;
     move(event);
     const bounds = boundsFromPoints(start.current, latestPoint.current);
     if (tool === "crop")
       onCrop(bounds.width >= 1 && bounds.height >= 1 ? bounds : null);
     else if (tool === "freehand") {
-      const a = newFreehandAnnotation(stroke.current);
+      const a = newFreehandAnnotation(stroke.current, strokeWidth.current);
       if (a) add(a);
     } else if (
       tool === "arrow"
@@ -190,17 +207,86 @@ export function Canvas({
         start.current,
         latestPoint.current,
         document.annotations,
+        strokeWidth.current,
       );
       if (a) add(a);
     }
     cancel();
   };
+  const begin = (e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
+    if (disabled) return;
+    if ("touches" in e.evt) {
+      if (e.evt.touches.length !== 1) {
+        cancel();
+        if (tool === "crop") onCrop(null);
+        return;
+      }
+      touchId.current = e.evt.touches[0].identifier;
+      // Suppress compatibility mouse events so a tap cannot add two annotations.
+      e.evt.preventDefault();
+    } else if (e.evt.button !== 0 || touchId.current !== null) return;
+    const p = point(e.evt);
+    if (!p) return;
+    if (tool === "select") {
+      const node = e.target.findAncestor(".annotation", true);
+      if (
+        e.target.getClassName() === "Transformer" ||
+        e.target.getParent()?.getClassName() === "Transformer"
+      )
+        return;
+      select(node?.id() ?? null);
+      return;
+    }
+    // Prevent the canvas's native focus action from stealing text-field focus.
+    e.evt.preventDefault();
+    select(null);
+    if (tool === "text" || tool === "marker") {
+      const a = newAnnotation(tool, p, p, document.annotations);
+      if (a) add(a);
+      return;
+    }
+    strokeWidth.current = window.matchMedia("(max-width: 600px)").matches
+      ? 6
+      : 4;
+    start.current = p;
+    latestPoint.current = p;
+    stroke.current = [p];
+    if (tool === "crop") onCrop(null);
+  };
   useEffect(() => {
     const blur = () => cancel();
+    const touchmove = (event: TouchEvent) => {
+      if (touchId.current === null) return;
+      if (event.touches.length !== 1) {
+        cancel();
+        if (tool === "crop") onCrop(null);
+        return;
+      }
+      move(event);
+    };
+    const touchend = (event: TouchEvent) => {
+      if (
+        ![...event.changedTouches].some((t) => t.identifier === touchId.current)
+      )
+        return;
+      finish(event);
+      touchId.current = null;
+    };
+    const touchcancel = () => {
+      if (touchId.current === null) return;
+      cancel();
+      if (tool === "crop") onCrop(null);
+    };
+    window.addEventListener("touchmove", touchmove);
+    window.addEventListener("touchend", touchend);
+    window.addEventListener("touchcancel", touchcancel);
     window.addEventListener("mousemove", move);
     window.addEventListener("mouseup", finish);
     window.addEventListener("blur", blur);
     return () => {
+      window.removeEventListener("touchmove", touchmove);
+      window.removeEventListener("touchend", touchend);
+      window.removeEventListener("touchcancel", touchcancel);
       window.removeEventListener("mousemove", move);
       window.removeEventListener("mouseup", finish);
       window.removeEventListener("blur", blur);
@@ -224,33 +310,8 @@ export function Canvas({
         scaleX={zoom}
         scaleY={zoom}
         listening={!disabled}
-        onMouseDown={(e) => {
-          if (e.evt.button !== 0) return;
-          const p = point();
-          if (!p) return;
-          if (tool === "select") {
-            const node = e.target.findAncestor(".annotation", true);
-            if (
-              e.target.getClassName() === "Transformer" ||
-              e.target.getParent()?.getClassName() === "Transformer"
-            )
-              return;
-            select(node?.id() ?? null);
-            return;
-          }
-          // Prevent the canvas's native focus action from stealing text-field focus.
-          e.evt.preventDefault();
-          select(null);
-          if (tool === "text" || tool === "marker") {
-            const a = newAnnotation(tool, p, p, document.annotations);
-            if (a) add(a);
-            return;
-          }
-          start.current = p;
-          latestPoint.current = p;
-          stroke.current = [p];
-          if (tool === "crop") onCrop(null);
-        }}
+        onMouseDown={begin}
+        onTouchStart={begin}
         onMouseMove={(e) => move(e.evt)}
         onMouseUp={(e) => finish(e.evt)}
       >
@@ -315,7 +376,7 @@ export function Canvas({
                     "bottom-right",
                   ]
             }
-            anchorSize={8 / zoom}
+            anchorSize={8}
             borderStroke="#c8ee82"
             anchorStroke="#c8ee82"
             anchorFill="#15171c"

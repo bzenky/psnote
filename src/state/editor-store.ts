@@ -95,7 +95,26 @@ export function boundsFromPoints(start: Point, end: Point): Bounds {
     height: Math.abs(end.y - start.y),
   };
 }
-export function newFreehandAnnotation(points: Point[]): Annotation | null {
+function annotationId(): string {
+  if (typeof crypto.randomUUID === "function") return crypto.randomUUID();
+  // randomUUID requires HTTPS or localhost; getRandomValues also works on LAN HTTP.
+  const bytes = crypto.getRandomValues(new Uint8Array(16));
+  bytes[6] = (bytes[6] & 0x0f) | 0x40;
+  bytes[8] = (bytes[8] & 0x3f) | 0x80;
+  const hex = Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0"));
+  return [
+    hex.slice(0, 4).join(""),
+    hex.slice(4, 6).join(""),
+    hex.slice(6, 8).join(""),
+    hex.slice(8, 10).join(""),
+    hex.slice(10).join(""),
+  ].join("-");
+}
+
+export function newFreehandAnnotation(
+  points: Point[],
+  strokeWidth = 4,
+): Annotation | null {
   if (points.length < 2) return null;
   let x = points[0].x;
   let y = points[0].y;
@@ -111,14 +130,14 @@ export function newFreehandAnnotation(points: Point[]): Annotation | null {
   const width = Math.max(1, right - x);
   const height = Math.max(1, bottom - y);
   return {
-    id: crypto.randomUUID(),
+    id: annotationId(),
     type: "freehand",
     x,
     y,
     width,
     height,
     color: "#ef4444",
-    strokeWidth: 4,
+    strokeWidth,
     points: points.map((point) => ({
       x: (point.x - x) / width,
       y: (point.y - y) / height,
@@ -130,8 +149,9 @@ export function newAnnotation(
   start: Point,
   end: Point,
   annotations: Annotation[],
+  strokeWidth = 4,
 ): Annotation | null {
-  const id = crypto.randomUUID();
+  const id = annotationId();
   const color = "#ef4444";
   const bounds = boundsFromPoints(start, end);
   switch (tool) {
@@ -143,15 +163,15 @@ export function newAnnotation(
         width: end.x - start.x,
         height: end.y - start.y,
         color,
-        strokeWidth: 4,
+        strokeWidth,
       };
     case "rectangle":
     case "ellipse":
-      return { id, type: tool, ...bounds, color, strokeWidth: 4 };
+      return { id, type: tool, ...bounds, color, strokeWidth };
     case "spotlight":
       return { id, type: "spotlight", ...bounds };
     case "freehand":
-      return newFreehandAnnotation([start, end]);
+      return newFreehandAnnotation([start, end], strokeWidth);
     case "redaction":
       return { id, type: "redaction", ...bounds };
     case "text":

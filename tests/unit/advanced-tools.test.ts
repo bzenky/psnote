@@ -23,6 +23,30 @@ function renderedPoints(annotation: Extract<Annotation, { type: "freehand" }>) {
   }));
 }
 
+describe("annotation stroke defaults", () => {
+  it.each(["arrow", "rectangle", "ellipse", "freehand"] as const)(
+    "keeps the 4px default and accepts a thicker %s stroke",
+    (tool) => {
+      const start = { x: 10, y: 20 };
+      const end = { x: 70, y: 50 };
+      expect(newAnnotation(tool, start, end, [])).toMatchObject({
+        strokeWidth: 4,
+      });
+      expect(newAnnotation(tool, start, end, [], 6)).toMatchObject({
+        strokeWidth: 6,
+      });
+    },
+  );
+  it("uses the same requested width for freehand previews and completed strokes", () => {
+    const points = [
+      { x: 10, y: 20 },
+      { x: 30, y: 40 },
+    ];
+    expect(newFreehandAnnotation(points)).toMatchObject({ strokeWidth: 4 });
+    expect(newFreehandAnnotation(points, 6)).toMatchObject({ strokeWidth: 6 });
+  });
+});
+
 describe("advanced annotation creation", () => {
   it.each(["ellipse", "spotlight"] as const)(
     "creates %s with positive bounds for forward and reversed drags",
